@@ -266,7 +266,7 @@ class PipeLine:
         
         ############## PCA ########################
         if self.n_components is not None:
-            pca = PCA(n_components=self.n_components)
+            pca = PCA(n_components=self.n_components, svd_solver="full")
             X_train_pca = pca.fit_transform(X_train_scaled)
             X_test_pca = pca.transform(X_test_scaled)
         else:
@@ -328,16 +328,14 @@ if __name__ == "__main__":
         transform_sqrt=True,
     )
 
-    rf_param_grid = {
-        "n_estimators": [50, 100, 200],
+    dt_param_grid = {
         "max_depth": [None, 10, 20],
         "min_samples_split": [2, 5],
     }
 
-    model = RandomForestModel(
-        param_grid=rf_param_grid,
+    model = DecisionTreeModel(
+        param_grid=dt_param_grid,
         random_state=42,
-        n_jobs=-1,
     )
     runner = PipeLine(data_load, feature_extractor, model, n_components=128)
     runner.run()
