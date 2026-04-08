@@ -13,6 +13,7 @@ from sklearn.metrics import classification_report
 from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import StandardScaler
+from sklearn.neural_network import MLPClassifier
 from sklearn.svm import SVC
 
 
@@ -208,6 +209,29 @@ class KNNModel(BaseModel):
         return KNeighborsClassifier(**self.kwargs)
 
 
+class MLPModel(BaseModel):
+    """Multi-Layer Perceptron classifier built on sklearn's MLPClassifier.
+
+    Default architecture: two hidden layers (512 → 256) with ReLU activation,
+    Adam optimizer, and early stopping to avoid overfitting.
+    All constructor kwargs are forwarded directly to MLPClassifier.
+    """
+
+    def build(self):
+        defaults = dict(
+            hidden_layer_sizes=(512, 256),
+            activation="relu",
+            solver="adam",
+            max_iter=300,
+            early_stopping=True,
+            validation_fraction=0.1,
+            random_state=42,
+        )
+        # kwargs passed at construction override defaults
+        defaults.update(self.kwargs)
+        return MLPClassifier(**defaults)
+
+
 
 class HOGFeatureExtractor:
     def __init__(
@@ -256,8 +280,13 @@ class PipeLine:
         X_train, y_train, X_test, y_test = self.data_load.load_data()
         
         ############# Feature extraction #############
-        X_train = self.feature_extractor.extract(X_train)
-        X_test = self.feature_extractor.extract(X_test)
+        if self.feature_extractor is not None:
+            X_train = self.feature_extractor.extract(X_train)
+            X_test = self.feature_extractor.extract(X_test)
+        else:
+            # Learn directly on images: flatten (N, H, W) to (N, H*W)
+            X_train = X_train.reshape(X_train.shape[0], -1)
+            X_test = X_test.reshape(X_test.shape[0], -1)
         
         ############# Standardization #############
         scaler = StandardScaler()
@@ -316,7 +345,7 @@ class PipeLine:
 
 if __name__ == "__main__":
     data_load = LoadData(
-        path=r"C:/Users/ADMIN/Desktop/252/ML/BTL/classification_task",
+        path=r"./classification_task",
         image_size=(128, 128),
         color_mode="grayscale",
         normalize=True,
@@ -328,14 +357,14 @@ if __name__ == "__main__":
         transform_sqrt=True,
     )
 
-    dt_param_grid = {
-        "max_depth": [None, 10, 20],
-        "min_samples_split": [2, 5],
-    }
-
-    model = DecisionTreeModel(
-        param_grid=dt_param_grid,
+    mlp_model = MLPModel(
+        hidden_layer_sizes=(512, 256),
+        activation="relu",
+        solver="adam",
+        max_iter=300,
+        early_stopping=True,
         random_state=42,
     )
-    runner = PipeLine(data_load, feature_extractor, model, n_components=128)
+    
+    runner = PipeLine(data_load, feature_extractor, mlp_model, n_components=128)
     runner.run()
