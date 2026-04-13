@@ -120,7 +120,7 @@ class LoadData:
 class BaseModel:
     supports_feature_importance = False
 
-    def __init__(self, param_grid=None, cv=5, scoring="accuracy", search_n_jobs=-1, **kwargs):
+    def __init__(self, param_grid=None, cv=5, scoring="f1_macro", search_n_jobs=-1, **kwargs):
         self.param_grid = param_grid
         self.cv = cv
         self.scoring = scoring
